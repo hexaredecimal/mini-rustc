@@ -1,6 +1,6 @@
 use super::Parser;
 use crate::ast::{self, Expr, ExprKind, Path, UnOp};
-use crate::lexer::{self, Token, TokenKind};
+use crate::lexer::{self, Token, TokenKind, BinOp};
 use crate::span::Ident;
 
 pub fn is_expr_start(token: &Token) -> bool {
@@ -12,7 +12,7 @@ pub fn is_expr_start(token: &Token) -> bool {
             | TokenKind::OpenParen
             | TokenKind::OpenBrace
             | TokenKind::OpenBracket
-            | TokenKind::BinOp(lexer::BinOp::Plus | lexer::BinOp::Minus)
+            | TokenKind::BinOp(lexer::BinOp::Plus | lexer::BinOp::Minus | lexer::BinOp::And)
             | TokenKind::Return
             | TokenKind::True
             | TokenKind::False
@@ -333,6 +333,15 @@ impl Parser {
                     span: block.span.clone(),
                     kind: ExprKind::Block(block),
                     id: self.get_next_id(),
+                }
+            }
+            TokenKind::BinOp(BinOp::And) => {
+                let span = self.skip_token().span; 
+                let path = self.parse_expr()?; 
+                Expr {
+                    span,
+                    kind: ExprKind::Ref(Box::new(path)), 
+                    id: self.get_next_id(), 
                 }
             }
             _ => {

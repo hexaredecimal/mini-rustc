@@ -19,6 +19,11 @@ impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
 
     pub fn gen_item(&mut self, item: &'gen Item) -> Result<(), ()> {
         match &item.kind {
+            ItemKind::Impl(implements) => {
+                for func in &implements.methods {
+                    self.gen_func(func)?;
+                }
+            }
             ItemKind::Func(func) => {
                 self.gen_func(func)?;
             }

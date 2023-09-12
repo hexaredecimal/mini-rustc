@@ -1,12 +1,12 @@
 use super::Parser;
-use crate::ast::{ExternBlock, Func, Item, ItemKind, Module, StructItem, Ty, TyKind};
+use crate::ast::{ExternBlock, Func, Item, Impl, ItemKind, Module, StructItem, Ty, TyKind};
 use crate::lexer::{self, Token, TokenKind};
 use crate::span::Ident;
 
 pub fn is_item_start(token: &Token) -> bool {
     matches!(
         token.kind,
-        TokenKind::Fn | TokenKind::Extern | TokenKind::Struct | TokenKind::Mod
+        TokenKind::Fn | TokenKind::Extern | TokenKind::Struct | TokenKind::Mod | TokenKind::Impl 
     )
 }
 
@@ -27,6 +27,9 @@ impl Parser {
             TokenKind::Mod => Some(Item {
                 kind: ItemKind::Mod(self.parse_module()?),
             }),
+            TokenKind::Impl => Some(Item {
+                kind: ItemKind::Impl(self.parse_impl()?), 
+            }),
             _ => {
                 eprintln!(
                     "Expected item, but found `{}`",
@@ -35,6 +38,38 @@ impl Parser {
                 None
             }
         }
+    }
+
+    fn parse_impl(&mut self) -> Option<Impl> {
+        self.skip_token(); 
+
+        let name = self.parse_ident()?; 
+        
+        if !self.skip_expected_token(TokenKind::OpenBrace) {
+            eprintln!(
+                "Expected '{{' for extern block, but found `{}`",
+                self.peek_token().span.to_snippet()
+            );
+            return None;
+        }
+
+        let mut funcs = vec![];
+        while self.peek_token().kind == TokenKind::Fn {
+            funcs.push(self.parse_func(None)?);
+        }
+
+        if !self.skip_expected_token(TokenKind::CloseBrace) {
+            eprintln!(
+                "Expected '}}' or external item, but found `{}`",
+                self.peek_token().span.to_snippet()
+            );
+            return None;
+        }
+        
+        return Some(Impl {
+            name, 
+            methods: funcs, 
+        });
     }
 
     /// module ::= "mod" ident "{" item* "}"

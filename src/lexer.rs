@@ -31,6 +31,7 @@ pub enum TokenKind {
     As,
     Mut,
     Const,
+    Impl, 
     /// ->
     Arrow,
     /// !
@@ -319,6 +320,7 @@ impl Lexer {
             "as" => self.new_token(TokenKind::As),
             "mut" => self.new_token(TokenKind::Mut),
             "const" => self.new_token(TokenKind::Const),
+            "impl" => self.new_token(TokenKind::Impl), 
             _ => self.new_token(TokenKind::Ident(s)),
         }
     }

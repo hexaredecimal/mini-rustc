@@ -36,6 +36,13 @@ pub enum ItemKind {
     Struct(StructItem),
     ExternBlock(ExternBlock),
     Mod(Module),
+    Impl(Impl), 
+}
+
+#[derive(Debug)]
+pub struct Impl {
+    pub name: Ident, 
+    pub methods: Vec<Func>, 
 }
 
 #[derive(Debug)]
@@ -118,6 +125,7 @@ pub enum ExprKind {
     Struct(Path, Vec<(Ident, Box<Expr>)>),
     Array(Vec<Expr>),
     Cast(Box<Expr>, Ty),
+    Ref(Box<Expr>), 
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]

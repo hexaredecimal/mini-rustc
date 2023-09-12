@@ -281,6 +281,24 @@ impl<'chk> ast::visitor::Visitor<'chk> for TypeChecker<'_, 'chk> {
                     Rc::new(Ty::error())
                 }
             }
+            ExprKind::Ref(path) => {
+                // find symbols in local variables, parameters, and in functions
+                /*if let Some(binding) = self.ctx.resolve_path(path) {
+                    if let Some(ty) = self.ctx.lookup_name_type(&binding) {
+                        Rc::new(Ty::new(ty::TyKind::Ref(ty)))
+                    } else {
+                        self.error(format!("Cannot reference `{:?}` before declaration", path));
+                        Rc::new(Ty::error())
+                    }
+                } else {
+                    self.error(format!("Could not resolve ident `{:?}`", path));
+                    Rc::new(Ty::error())
+                } */
+
+                let type_info = self.ctx.get_type(path.id);
+                 Rc::new(Ty::new(ty::TyKind::Ref(type_info)))
+            }
+
 
             ExprKind::Return(expr) => {
                 let actual_ret_ty = self.ctx.get_type(expr.id);

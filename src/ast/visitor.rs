@@ -56,6 +56,11 @@ fn walk_item<'ctx, V: Visitor<'ctx>>(v: &mut V, item: &'ctx Item) {
         ItemKind::Mod(module) => {
             walk_module_item(v, module);
         }
+        ItemKind::Impl(implements) => {
+            for func in &implements.methods {
+                walk_func(v, func); 
+            }
+        }
     }
     v.visit_item_post(item);
 }
@@ -190,6 +195,10 @@ fn walk_expr<'ctx, V: Visitor<'ctx>>(v: &mut V, expr: &'ctx Expr) {
         ExprKind::Cast(inner, ty) => {
             walk_expr(v, inner);
             walk_type(v, ty);
+        }
+
+        ExprKind::Ref(path) => {
+            walk_expr(v, path);  
         }
     }
     v.visit_expr_post(expr);

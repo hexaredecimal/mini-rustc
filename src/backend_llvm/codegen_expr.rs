@@ -148,6 +148,10 @@ impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
             ExprKind::Block(block) => self.gen_block(block)?,
             // identifiers may not be allocated on memory
             ExprKind::Path(path) => LLValue::Reg(self.load_path(path)?),
+            ExprKind::Ref(path) => {
+                let p = self.eval_expr(path)?; 
+                p
+            }
             // arrays and structs are always allocated on memory
             ExprKind::Index(_, _) | ExprKind::Field(_, _) => {
                 let lval = self.gen_lval(expr)?;
