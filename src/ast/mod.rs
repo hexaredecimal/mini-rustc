@@ -73,6 +73,7 @@ pub struct Func {
     pub ext: Option<String>,
     pub body: Option<Block>,
     pub id: NodeId,
+    pub variadic: bool, 
 }
 
 #[derive(Debug)]
@@ -94,6 +95,7 @@ pub enum StmtKind {
 #[derive(Debug)]
 pub struct LetStmt {
     pub ident: Ident,
+    pub mutable: bool, 
     pub ty: Option<Ty>,
     pub init: Option<Expr>,
 }
@@ -126,6 +128,7 @@ pub enum ExprKind {
     Array(Vec<Expr>),
     Cast(Box<Expr>, Ty),
     Ref(Box<Expr>), 
+    Deref(Path), 
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]

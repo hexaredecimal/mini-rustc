@@ -109,7 +109,7 @@ fn walk_stmt<'ctx, V: Visitor<'ctx>>(v: &mut V, stmt: &'ctx Stmt) {
         StmtKind::Semi(expr) => walk_expr(v, expr),
         StmtKind::Expr(expr) => walk_expr(v, expr),
         StmtKind::Let(let_stmt) => {
-            let LetStmt { ident: _, ty, init } = let_stmt;
+            let LetStmt { ident: _, ty, init, mutable } = let_stmt;
             if let Some(ty) = ty {
                 walk_type(v, ty);
             }
@@ -196,7 +196,9 @@ fn walk_expr<'ctx, V: Visitor<'ctx>>(v: &mut V, expr: &'ctx Expr) {
             walk_expr(v, inner);
             walk_type(v, ty);
         }
-
+        ExprKind::Deref(path) => {
+            walk_path(v, path); 
+        }
         ExprKind::Ref(path) => {
             walk_expr(v, path);  
         }

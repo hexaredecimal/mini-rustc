@@ -178,12 +178,33 @@ impl Parser {
         } else {
             self.parse_func_params()?
         };
+        let mut variadic = false; 
         if !self.skip_expected_token(TokenKind::CloseParen) {
-            eprintln!(
-                "Expected ')', but found `{}`",
-                self.peek_token().span.to_snippet()
-            );
-            return None;
+            if self.peek_token().kind == TokenKind::Dot { 
+                let mut tmp = String::from(""); 
+                while self.peek_token().kind == TokenKind::Dot {
+                    self.skip_token(); 
+                    tmp.push_str("."); 
+                }
+
+                if tmp.as_str() == "..." {
+                    variadic = true;
+                    if !self.skip_expected_token(TokenKind::CloseParen) {
+                        eprintln!(
+                            "Expected ')', but found `{}`",
+                            self.peek_token().span.to_snippet()
+                        );
+                        return None
+                    }
+                } else {
+                    println!("Expected ')' but found unfinished variadic"); 
+                    return None;
+                }
+                                    
+            } else {
+              
+            }
+            
         }
 
         if !self.skip_expected_token(TokenKind::Arrow) {
@@ -215,6 +236,7 @@ impl Parser {
             ret_ty: ret_ty,
             ext,
             body,
+            variadic, 
             id: self.get_next_id(),
         })
     }

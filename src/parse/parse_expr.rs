@@ -12,7 +12,7 @@ pub fn is_expr_start(token: &Token) -> bool {
             | TokenKind::OpenParen
             | TokenKind::OpenBrace
             | TokenKind::OpenBracket
-            | TokenKind::BinOp(lexer::BinOp::Plus | lexer::BinOp::Minus | lexer::BinOp::And)
+            | TokenKind::BinOp(lexer::BinOp::Plus | lexer::BinOp::Minus | lexer::BinOp::And | lexer::BinOp::Star)
             | TokenKind::Return
             | TokenKind::True
             | TokenKind::False
@@ -342,6 +342,18 @@ impl Parser {
                     span,
                     kind: ExprKind::Ref(Box::new(path)), 
                     id: self.get_next_id(), 
+                }
+            }
+
+            TokenKind::BinOp(BinOp::Star) => {
+                let span = self.skip_token().span; 
+                let path = self.parse_path()?;
+                let span = span.concat(&path.span); 
+                //println!("The deref of {:?}", path); 
+                Expr {
+                   span, 
+                   kind: ExprKind::Deref(path), 
+                   id: self.get_next_id(), 
                 }
             }
             _ => {

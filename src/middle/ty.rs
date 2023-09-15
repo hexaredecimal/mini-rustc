@@ -14,7 +14,7 @@ pub enum TyKind {
     I32,
     Str,
     Array(Rc<Ty>, usize),
-    Fn(Rc<Vec<Rc<Ty>>>, Rc<Ty>),
+    Fn(Rc<Vec<Rc<Ty>>>, Rc<Ty>, bool),
     Adt(Rc<CanonicalPath>),
     Ref(Rc<Ty>),
     Never,
@@ -52,7 +52,7 @@ impl Ty {
     }
 
     pub fn get_func_type(&self) -> Option<(Rc<Vec<Rc<Ty>>>, Rc<Ty>)> {
-        if let TyKind::Fn(params, ret) = &self.kind {
+        if let TyKind::Fn(params, ret, variadic) = &self.kind {
             Some((Rc::clone(params), Rc::clone(ret)))
         } else {
             None

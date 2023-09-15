@@ -101,8 +101,9 @@ impl<'chk> ast::visitor::Visitor<'chk> for TypeChecker<'_, 'chk> {
             .map(|(_ident, ty)| Rc::new(self.ast_ty_to_ty(ty)))
             .collect();
         let func_ty = Rc::new(Ty::new(TyKind::Fn(
-            Rc::new(param_tys),
+            Rc::new(param_tys), 
             Rc::new(self.ast_ty_to_ty(&func.ret_ty)),
+            true, 
         )));
 
         let binding = self.ctx.get_binding(&func.name).unwrap();
@@ -159,7 +160,7 @@ impl<'chk> ast::visitor::Visitor<'chk> for TypeChecker<'_, 'chk> {
                     Rc::new(Ty::unit())
                 }
             }
-            StmtKind::Let(LetStmt { init, ty, ident: _ }) => {
+            StmtKind::Let(LetStmt { init, ty, ident: _, mutable }) => {
                 if let Some(init) = init {
                     let init_ty = self.ctx.get_type(init.id);
                     let annotated_ty = self.ast_ty_to_ty(ty.as_ref().unwrap());
@@ -299,7 +300,29 @@ impl<'chk> ast::visitor::Visitor<'chk> for TypeChecker<'_, 'chk> {
                  Rc::new(Ty::new(ty::TyKind::Ref(type_info)))
             }
 
+            ExprKind::Deref(path) => {
+                if let Some(binding) = self.ctx.resolve_path(path) {
+                    if let Some(ty) = self.ctx.lookup_name_type(&binding) {
+                        let type_info = match &ty.clone().kind {
+                            ty::TyKind::Ref(inner) => {
+                                inner.clone() 
+                            }, 
+                            _ => {
+                                self.error(format!("Cannot dereference non reference type")); 
+                                Rc::new(Ty::error())
+                            }
+                        }; 
 
+                        type_info
+                    } else {
+                        self.error(format!("Cannot dereference `{:?}` before declaration", path));
+                        Rc::new(Ty::error())
+                    }
+                } else {
+                    self.error(format!("Could not dereference ident before declaration `{:?}`", path));
+                    Rc::new(Ty::error())
+                }
+            }
             ExprKind::Return(expr) => {
                 let actual_ret_ty = self.ctx.get_type(expr.id);
                 let expected_ret_ty = self.peek_return_type();
@@ -316,10 +339,11 @@ impl<'chk> ast::visitor::Visitor<'chk> for TypeChecker<'_, 'chk> {
             // TODO: deal with never type params
             ExprKind::Call(expr, args) => {
                 let maybe_func_ty = self.ctx.get_type(expr.id);
-                if let TyKind::Fn(param_ty, ret_ty) = &maybe_func_ty.kind {
-                    if param_ty.len() == args.len() {
+                if let TyKind::Fn(param_ty, ret_ty, variadic) = &maybe_func_ty.kind {
+                    
+                    if param_ty.len() == args.len() && !variadic.clone() {
                         let mut ok = true;
-                        for (arg, param_ty) in args.iter().zip(param_ty.iter()) {
+                         for (arg, param_ty) in args.iter().zip(param_ty.iter()) {
                             let arg_ty = &self.ctx.get_type(arg.id);
                             if arg_ty != param_ty {
                                 self.error(format!(
@@ -334,7 +358,25 @@ impl<'chk> ast::visitor::Visitor<'chk> for TypeChecker<'_, 'chk> {
                         } else {
                             Rc::new(Ty::error())
                         }
+                   }  else if variadic.clone() {
+                        let mut ok = true;
+                        for (arg, param_ty) in args.iter().zip(param_ty.iter()) {
+                        let arg_ty = &self.ctx.get_type(arg.id);
+                            if arg_ty != param_ty {
+                            self.error(format!(
+                                    "Expected {:?} type argument, but found {:?} type",
+                                    param_ty, arg_ty
+                                ));
+                                ok = false;
+                            }
+                        }
+                        if ok {
+                            Rc::clone(ret_ty)
+                        } else {
+                            Rc::new(Ty::error())
+                        }
                     } else {
+                       
                         self.error(format!(
                             "Expected {} arguments, but found {}",
                             param_ty.len(),

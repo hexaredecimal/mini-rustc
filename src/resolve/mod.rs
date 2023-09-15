@@ -13,7 +13,7 @@ pub struct Binding {
 pub enum BindingKind {
     Mod,
     Item,
-    Let(ShadowingIndex),
+    Let(ShadowingIndex, bool),
     Param,
 }
 
@@ -25,7 +25,7 @@ impl BindingKind {
     }
 
     pub fn is_let(&self) -> bool {
-        matches!(self, BindingKind::Let(_))
+        matches!(self, BindingKind::Let(_, _))
     }
 }
 

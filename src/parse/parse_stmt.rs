@@ -50,8 +50,15 @@ impl Parser {
     fn parse_let_stmt(&mut self) -> Option<Stmt> {
         // skip "let"
         let mut span = self.skip_token().span;
+        let mut is_mut = false; 
+        let ident = if self.peek_token().kind == TokenKind::Mut {
+            self.skip_token();
+            is_mut = true; 
+            self.parse_ident()?
+        } else {
+            self.parse_ident()?
+        }; 
 
-        let ident = self.parse_ident()?;
         // skip colon
         if !self.skip_expected_token(TokenKind::Colon) {
             eprintln!(
@@ -85,6 +92,7 @@ impl Parser {
         Some(Stmt {
             kind: StmtKind::Let(LetStmt {
                 ident,
+                mutable: is_mut, 
                 ty: Some(ty),
                 init,
             }),

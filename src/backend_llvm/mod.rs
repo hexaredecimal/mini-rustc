@@ -68,7 +68,7 @@ impl<'ctx, 'gen> Codegen<'ctx, 'gen> {
             },
             TyKind::Error => panic!("ICE: typecheck failed but codegen has started"),
             TyKind::Str => todo!(),
-            TyKind::Fn(_, _) => todo!(),
+            TyKind::Fn(_, _, _) => todo!(),
         }
     }
 

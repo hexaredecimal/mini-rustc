@@ -114,8 +114,8 @@ impl VisitFrame<'_, '_, '_> {
             reg_ty = LLTy::Ptr(Rc::new(reg_ty));
         }
         let name_binding = self.codegen.ctx.get_binding(ident).unwrap();
-        let reg_name_postfix = if let BindingKind::Let(shadowed_idx) = binding_kind {
-            format!(".spill{}", shadowed_idx)
+        let reg_name_postfix = if let BindingKind::Let(shadowed_idx, mutable) = binding_kind {
+            format!(".spill{}{}", shadowed_idx, if mutable { "_mutable_" } else { "" })
         } else {
             "".to_owned()
         };

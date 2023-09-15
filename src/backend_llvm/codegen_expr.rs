@@ -4,13 +4,17 @@ use crate::{
     backend_llvm::{llvm::LLConst, LLImm, LLReg, LLTy},
 };
 use std::rc::Rc;
+use crate:: {
+    resolve::{BindingKind}
+}; 
+
 
 impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
     // evaluate expression
     // expr struct/array -> sturct*/array*
     // otherwise: expr: LLTY -> LLTY/void
     pub fn eval_expr(&mut self, expr: &'gen Expr) -> Result<LLValue, ()> {
-        println!("; Starts expr `{}`", expr.span.to_snippet());
+        //println!("; Starts expr `{}`", expr.span.to_snippet());
         let llty = self.ty_to_llty(&self.ctx.get_type(expr.id));
         if llty.eval_to_ptr() {
             return Ok(LLValue::Reg(self.gen_lval(expr)?));
@@ -149,8 +153,13 @@ impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
             // identifiers may not be allocated on memory
             ExprKind::Path(path) => LLValue::Reg(self.load_path(path)?),
             ExprKind::Ref(path) => {
-                let p = self.eval_expr(path)?; 
-                p
+                let j  = self.gen_lval(path)?;
+                LLValue::Reg(j)
+            }
+            ExprKind::Deref(path) => {
+                let some = self.load_path(path)?; 
+                let some = self.load_ptr(&some)?;
+                LLValue::Reg(some)
             }
             // arrays and structs are always allocated on memory
             ExprKind::Index(_, _) | ExprKind::Field(_, _) => {
@@ -161,6 +170,27 @@ impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
             ExprKind::Assign(lhs, rhs) => {
                 let rhs_llty = self.ty_to_llty(&self.ctx.get_type(rhs.id));
 
+                match &lhs.kind {
+                    ExprKind::Path(path) => {
+                        let binding = self.ctx.resolve_path(&path).unwrap();  
+                        match &binding.kind {
+                            BindingKind::Let(_, mutable) => {
+                                if !mutable {
+                                    println!("cannot re-assign to a non mutable variable"); 
+                                    std::process::exit(1); 
+                                }
+                            }
+                            _ => {
+                                println!("Internal error"); 
+                                std::process::exit(1); 
+                            }
+                        }
+                    }
+                    _ => {
+                        println!("Cannot assign to expr of kind {:?}", lhs.kind);
+                        std::process::exit(1); 
+                    }
+                }
                 if rhs_llty.eval_to_ptr() {
                     let lhs_ptr = self.gen_lval(lhs)?;
                     let rhs_ptr = self.gen_lval(rhs)?;
@@ -196,7 +226,7 @@ impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
             ExprKind::Struct(..) | ExprKind::Array(..) => panic!("ICE"),
         };
 
-        println!("; Finishes expr `{}`", expr.span.to_snippet());
+        // println!("; Finishes expr `{}`", expr.span.to_snippet());
         Ok(ret)
     }
 
@@ -287,6 +317,7 @@ impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
             todo!();
         };
 
+
         let mut arg_vals = vec![];
         for arg in args {
             let arg_ty = &self.ctx.get_type(arg.id);
@@ -316,6 +347,8 @@ impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
         };
 
         let binding = self.ctx.resolve_path(path).unwrap();
+
+        // println!("Call: {:?}", binding);
         print!(
             "call {} @{}(",
             actual_ret_llty.to_string(),

@@ -382,20 +382,19 @@ impl Lexer {
                     self.skip_input();
                     break;
                 }
-                /*
-                TODO: escape
                 '\\' => {
                     self.skip_input();
                     let escp = match self.skip_input().unwrap() {
                         'n' => '\n',
+                        't' => '\t', 
+                        'r' => '\r',
                         c => {
                             eprintln!("Escape \"\\{c}\" is not supported");
-                            return Err(());
+                            return self.new_token(TokenKind::Unknown); 
                         }
                     };
                     chars.push(escp);
                 }
-                */
                 '\n' => {
                     eprintln!("Unexpected newline in string literal");
                     return self.new_token(TokenKind::Unknown);

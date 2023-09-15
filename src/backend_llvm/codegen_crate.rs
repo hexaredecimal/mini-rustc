@@ -104,7 +104,10 @@ impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
                 print!(", ");
             }
         }
-
+        
+        if func.variadic {
+            print!(", ..."); 
+        }
         print!(")");
 
         let Some(body) = &func.body else{
@@ -168,14 +171,14 @@ impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
     }
 
     fn gen_stmt(&mut self, stmt: &'gen Stmt) -> Result<LLValue, ()> {
-        println!("; Starts stmt `{}`", stmt.span.to_snippet());
+        // println!("; Starts stmt `{}`", stmt.span.to_snippet());
         let val = match &stmt.kind {
             StmtKind::Semi(expr) => {
                 self.eval_expr(expr)?;
                 LLValue::Imm(LLImm::Void)
             }
             StmtKind::Expr(expr) => self.eval_expr(expr)?,
-            StmtKind::Let(LetStmt { ident, ty: _, init }) => {
+            StmtKind::Let(LetStmt { ident, ty: _, init, mutable }) => {
                 let binding = self.ctx.get_binding(ident).unwrap();
                 let local = self.peek_frame().get_local(&binding);
 
@@ -187,7 +190,7 @@ impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
                 LLValue::Imm(LLImm::Void)
             }
         };
-        println!("; Finished stmt `{}`", stmt.span.to_snippet());
+        // println!("; Finished stmt `{}`", stmt.span.to_snippet());
         Ok(val)
     }
 }

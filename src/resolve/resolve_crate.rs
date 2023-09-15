@@ -77,7 +77,7 @@ impl Resolver {
         let mut res = 0;
         for scope in self.get_current_scopes() {
             if let Some(bind) = scope.get(&ident.symbol)
-                && matches!(bind.kind, BindingKind::Let(_) | BindingKind::Param){
+                && matches!(bind.kind, BindingKind::Let(_, _) | BindingKind::Param){
                 res+=1;
             }
         }
@@ -221,7 +221,7 @@ impl<'ctx> ast::visitor::Visitor<'ctx> for Resolver {
         if let StmtKind::Let(let_stmt) = &stmt.kind {
             // insert local variables
             let shadowing_index = self.get_num_of_same_variable_name_in_scopes(&let_stmt.ident);
-            self.insert_var_decl(&let_stmt.ident, BindingKind::Let(shadowing_index));
+            self.insert_var_decl(&let_stmt.ident, BindingKind::Let(shadowing_index, let_stmt.mutable));
         }
     }
 
