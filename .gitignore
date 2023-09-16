@@ -4,5 +4,6 @@
 **/*.exe
 **/*.out
 **/*.o
-**/tmp*
+**/tmp
+**/*.ll
 a.out

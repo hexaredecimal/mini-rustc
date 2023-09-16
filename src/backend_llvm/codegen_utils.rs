@@ -70,7 +70,30 @@ impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
                 let temp = self.peek_frame().get_ptr_to_temporary(expr.id).unwrap();
                 Ok(temp)
             }
-            _ => todo!("{:?}", expr),
+            ExprKind::Binary(_,_,_) => {
+                let e = self.eval_expr(expr)?; 
+                let new_reg = self.peek_frame_mut().get_fresh_reg();
+                let ty = self.ctx.get_type(expr.id); 
+                let tmp = self.ty_to_llty(&ty); 
+                let ty = tmp.to_string(); 
+                println!("\t{} = alloca {}", new_reg, ty); 
+                println!("\tstore {}, {}* {}", e.to_string_with_type(), ty, new_reg); 
+                //println!("\n\n{:?} = {:?}", new_reg, e.to_string_with_type()); 
+                
+                Ok(LLReg::new(new_reg, Rc::new(LLTy::Ptr(Rc::new(tmp)))))
+            }
+
+            ExprKind::NumLit(_) => {
+                let e = self.eval_expr(expr)?; 
+                let new_reg = self.peek_frame_mut().get_fresh_reg(); 
+                let ty = self.ctx.get_type(expr.id); 
+                let ty = self.ty_to_llty(&ty).to_string(); 
+                println!("\t{} = alloca {}", new_reg, ty); 
+                println!("\tstore {}, {}* {}", e.to_string_with_type(), ty, new_reg); 
+                
+                Ok(LLReg::new(new_reg, Rc::new(LLTy::Ptr(Rc::new(LLTy::I32)))))
+            }
+            _ => todo!("{:?}", expr)
         }
     }
 
