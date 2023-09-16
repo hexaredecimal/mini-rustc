@@ -93,6 +93,11 @@ impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
                 
                 Ok(LLReg::new(new_reg, Rc::new(LLTy::Ptr(Rc::new(LLTy::I32)))))
             }
+
+            ExprKind::Deref(path) => {
+                let e = self.load_path(path)?; 
+                Ok(e)  
+            }
             _ => todo!("{:?}", expr)
         }
     }
@@ -189,15 +194,16 @@ impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
             }
             _ => {
                 if init_llty.eval_to_ptr() {
-                    // TODO:
-                    todo!()
+                    let e = self.eval_expr(init)?; 
+                    println!("\tstore {}, {}", e.to_string_with_type(), ptr.to_string_with_type());  
+                } else {
+                    let init_val = self.eval_expr(init)?;
+                    println!(
+                        "\tstore {}, {}",
+                        init_val.to_string_with_type(),
+                        ptr.to_string_with_type()
+                    );
                 }
-                let init_val = self.eval_expr(init)?;
-                println!(
-                    "\tstore {}, {}",
-                    init_val.to_string_with_type(),
-                    ptr.to_string_with_type()
-                );
             }
         }
         Ok(())
