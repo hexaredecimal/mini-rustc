@@ -61,12 +61,39 @@ impl Parser {
 
         // skip colon
         if !self.skip_expected_token(TokenKind::Colon) {
-            eprintln!(
-                "Expected ':', but found `{}`",
-                self.peek_token().span.to_snippet()
-            );
-            return None;
+            if self.peek_token().kind == TokenKind::Eq {
+                self.skip_token(); 
+                let init = self.parse_expr(); 
+                span = span.concat(&self.peek_token().span);
+                if !self.skip_expected_token(TokenKind::Semi) {
+                    eprintln!(
+                        "Expected ';' for let statement, but found `{}`",
+                        self.peek_token().span.to_snippet()
+                    );
+                    return None;
+                }
+
+                let result = Some(Stmt {
+                    kind: StmtKind::Let(LetStmt {
+                        ident: ident.clone(),
+                        mutable: is_mut, 
+                        ty: None,
+                        init,
+                    }),
+                    id: self.get_next_id(),
+                    span: span.clone(),
+                }); 
+                
+                return result; 
+            } else {
+                eprintln!(
+                    "Expected ':', but found `{}`",
+                    self.peek_token().span.to_snippet()
+                );
+                return None;
+            }
         }
+
         // parse type
         let ty = self.parse_type()?;
 

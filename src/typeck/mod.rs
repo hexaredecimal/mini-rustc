@@ -81,6 +81,7 @@ impl<'ctx, 'chk> TypeChecker<'ctx, 'chk> {
                 ty::TyKind::ConstPtr(Rc::new(self.ast_ty_to_ty(referent)))
             }
         };
+
         Ty::new(kind)
     }
 }
@@ -163,11 +164,16 @@ impl<'chk> ast::visitor::Visitor<'chk> for TypeChecker<'_, 'chk> {
             StmtKind::Let(LetStmt { init, ty, ident: _, mutable }) => {
                 if let Some(init) = init {
                     let init_ty = self.ctx.get_type(init.id);
-                    let annotated_ty = self.ast_ty_to_ty(ty.as_ref().unwrap());
+                    // let annotated_ty = self.ast_ty_to_ty(ty.as_ref().unwrap());
+                    let annotated_ty = match ty {
+                        Some(t) => Rc::new(self.ast_ty_to_ty(t)), 
+                        None => self.visit_expr_post(init),  
+                    };
+
                     if init_ty.is_never() {
                         Rc::new(Ty::never())
                     } else {
-                        if annotated_ty != *init_ty {
+                        if *annotated_ty != *init_ty {
                             self.error(format!(
                                 "Expected `{:?}` type, but found `{:?}`",
                                 annotated_ty, init_ty
@@ -195,20 +201,31 @@ impl<'chk> ast::visitor::Visitor<'chk> for TypeChecker<'_, 'chk> {
                 let binding = self.ctx.get_binding(&let_stmt.ident).unwrap();
                 // set type of local variable
                 // TODO: unwrap
-                let annotated_ty = self.ast_ty_to_ty(let_stmt.ty.as_ref().unwrap());
+                let e = let_stmt.clone()
+                            .init.as_ref()
+                            .unwrap(); 
+                // let annotated_ty = self.ast_ty_to_ty(let_stmt.ty.as_ref().unwrap());
+                let annotated_ty = match &let_stmt.ty {
+                    Some(ty) => Rc::new(self.ast_ty_to_ty(ty)), 
+                    None =>  self.visit_expr_post(e), 
+                }; 
+
+
                 self.ctx
-                    .set_name_type(Rc::clone(&binding), Rc::new(annotated_ty));
+                    .set_name_type(Rc::clone(&binding), annotated_ty.clone());
                 // set type of statement
-                let stmt_ty = self.ast_ty_to_ty(let_stmt.ty.as_ref().unwrap());
+                //
+                // let stmt_ty = self.ast_ty_to_ty(let_stmt.ty.as_ref().unwrap());
+                let stmt_ty = annotated_ty.clone(); 
                 // TODO: unwrap
-                self.ctx.insert_type(stmt.id, Rc::new(stmt_ty));
+                self.ctx.insert_type(stmt.id, stmt_ty);
             }
             _ => {}
         }
     }
 
     // use post order
-    fn visit_expr_post(&mut self, expr: &'chk ast::Expr) {
+    fn visit_expr_post(&mut self, expr: &'chk ast::Expr) -> Rc<Ty> {
         let ty: Rc<Ty> = match &expr.kind {
             ExprKind::NumLit(_) => Rc::new(Ty::new(TyKind::I32)),
             ExprKind::BoolLit(_) => Rc::new(Ty::new(TyKind::Bool)),
@@ -226,8 +243,10 @@ impl<'chk> ast::visitor::Visitor<'chk> for TypeChecker<'_, 'chk> {
             }
             // TODO: deal with never type
             ExprKind::Binary(op, l, r) => {
-                let lhs_ty = &self.ctx.get_type(l.id);
-                let rhs_ty = &self.ctx.get_type(r.id);
+                // let lhs_ty = &self.ctx.get_type(l.id);
+                // let rhs_ty = &self.ctx.get_type(r.id);
+                let lhs_ty = self.visit_expr_post(l); 
+                let rhs_ty = self.visit_expr_post(r); 
                 match op {
                     BinOp::Add | BinOp::Sub | BinOp::Mul => {
                         if lhs_ty.kind == TyKind::I32 && rhs_ty.kind == TyKind::I32 {
@@ -521,7 +540,8 @@ impl<'chk> ast::visitor::Visitor<'chk> for TypeChecker<'_, 'chk> {
                 }
             }
         };
-        self.ctx.insert_type(expr.id, ty);
+        self.ctx.insert_type(expr.id, ty.clone());
+        ty
     }
 
     fn visit_block_post(&mut self, block: &'chk ast::Block) {

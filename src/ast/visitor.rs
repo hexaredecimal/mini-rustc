@@ -1,7 +1,10 @@
 use super::*;
+use crate::middle::ty; 
+use std::rc::Rc; 
 
 /// AST visitor
 pub trait Visitor<'ctx>: Sized {
+
     fn visit_crate(&mut self, _krate: &'ctx Crate) {}
     fn visit_crate_post(&mut self, _krate: &'ctx Crate) {}
     fn visit_item(&mut self, _item: &'ctx Item) {}
@@ -17,7 +20,7 @@ pub trait Visitor<'ctx>: Sized {
     fn visit_stmt(&mut self, _stmt: &'ctx Stmt) {}
     fn visit_stmt_post(&mut self, _stmt: &'ctx Stmt) {}
     fn visit_expr(&mut self, _expr: &'ctx Expr) {}
-    fn visit_expr_post(&mut self, _expr: &'ctx Expr) {}
+    fn visit_expr_post(&mut self, _expr: &'ctx Expr) -> Rc<ty::Ty> { Rc::new(ty::Ty::new(ty::TyKind::Never)) }
     fn visit_block(&mut self, _block: &'ctx Block) {}
     fn visit_block_post(&mut self, _block: &'ctx Block) {}
     fn visit_type(&mut self, _ty: &'ctx Ty) {}
