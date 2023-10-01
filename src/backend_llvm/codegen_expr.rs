@@ -1,12 +1,10 @@
 use super::{Codegen, LLValue};
 use crate::{
     ast::{self, Expr, ExprKind, NodeId},
-    backend_llvm::{llvm::LLConst, LLImm, LLReg, LLTy},
+    backend_llvm::{llvm::LLConst, LLImm, LLReg, LLTy, TyKind},
 };
 use std::rc::Rc;
-use crate:: {
-    resolve::{BindingKind}
-}; 
+use crate::resolve::BindingKind; 
 
 
 impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
@@ -171,7 +169,7 @@ impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
                 let rhs_llty = self.ty_to_llty(&self.ctx.get_type(rhs.id));
 
                 match &lhs.kind {
-                    ExprKind::Path(path) => {
+                    ExprKind::Path(path) | ExprKind::Deref(path)=> {
                         let binding = self.ctx.resolve_path(&path).unwrap();  
                         match &binding.kind {
                             BindingKind::Let(_, mutable) => {
@@ -179,9 +177,22 @@ impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
                                     println!("cannot re-assign to a non mutable variable"); 
                                     std::process::exit(1); 
                                 }
+
+                                if let Some(ty) = self.ctx.lookup_name_type(&binding) {
+                                    match &ty.kind {                                       
+                                        TyKind::ConstPtr(inner) => {
+                                            println!(
+                                                "assignment target hides behind a `*const` of type {:?}, signifying that the underlying memory cannot be changed", 
+                                                inner
+                                            );
+                                            std::process::exit(1); 
+                                        } 
+                                        _ => (), 
+                                    }
+                                } 
                             }
                             _ => {
-                                println!("Internal error"); 
+                                println!("Internal error when asigning a value to {:?}", path); 
                                 std::process::exit(1); 
                             }
                         }

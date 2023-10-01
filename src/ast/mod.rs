@@ -37,7 +37,15 @@ pub enum ItemKind {
     ExternBlock(ExternBlock),
     Mod(Module),
     Impl(Impl), 
+    TypeAlias(Type), 
 }
+
+#[derive(Debug)]
+pub struct Type {
+    pub name: Ident, 
+    pub aliasof: Ty
+}
+
 
 #[derive(Debug)]
 pub struct Impl {

@@ -64,6 +64,10 @@ fn walk_item<'ctx, V: Visitor<'ctx>>(v: &mut V, item: &'ctx Item) {
                 walk_func(v, func); 
             }
         }
+
+        ItemKind::TypeAlias(alias) => {
+            walk_type(v, &alias.aliasof); 
+        }
     }
     v.visit_item_post(item);
 }
@@ -112,7 +116,7 @@ fn walk_stmt<'ctx, V: Visitor<'ctx>>(v: &mut V, stmt: &'ctx Stmt) {
         StmtKind::Semi(expr) => walk_expr(v, expr),
         StmtKind::Expr(expr) => walk_expr(v, expr),
         StmtKind::Let(let_stmt) => {
-            let LetStmt { ident: _, ty, init, mutable } = let_stmt;
+            let LetStmt { ident: _, ty, init, mutable: _} = let_stmt;
             if let Some(ty) = ty {
                 walk_type(v, ty);
             }

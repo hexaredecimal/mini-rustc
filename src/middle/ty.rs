@@ -52,7 +52,7 @@ impl Ty {
     }
 
     pub fn get_func_type(&self) -> Option<(Rc<Vec<Rc<Ty>>>, Rc<Ty>)> {
-        if let TyKind::Fn(params, ret, variadic) = &self.kind {
+        if let TyKind::Fn(params, ret, _) = &self.kind {
             Some((Rc::clone(params), Rc::clone(ret)))
         } else {
             None

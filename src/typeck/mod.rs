@@ -161,7 +161,7 @@ impl<'chk> ast::visitor::Visitor<'chk> for TypeChecker<'_, 'chk> {
                     Rc::new(Ty::unit())
                 }
             }
-            StmtKind::Let(LetStmt { init, ty, ident: _, mutable }) => {
+            StmtKind::Let(LetStmt { init, ty, ident: _, mutable: _ }) => {
                 if let Some(init) = init {
                     let init_ty = self.ctx.get_type(init.id);
                     // let annotated_ty = self.ast_ty_to_ty(ty.as_ref().unwrap());
@@ -201,13 +201,13 @@ impl<'chk> ast::visitor::Visitor<'chk> for TypeChecker<'_, 'chk> {
                 let binding = self.ctx.get_binding(&let_stmt.ident).unwrap();
                 // set type of local variable
                 // TODO: unwrap
-                let e = let_stmt.clone()
-                            .init.as_ref()
-                            .unwrap(); 
+                let e = let_stmt.init.as_ref(); 
+                let e = e.unwrap(); 
+
                 // let annotated_ty = self.ast_ty_to_ty(let_stmt.ty.as_ref().unwrap());
                 let annotated_ty = match &let_stmt.ty {
                     Some(ty) => Rc::new(self.ast_ty_to_ty(ty)), 
-                    None =>  self.visit_expr_post(e), 
+                    None =>  self.visit_expr_post(&e), 
                 }; 
 
 
@@ -325,6 +325,9 @@ impl<'chk> ast::visitor::Visitor<'chk> for TypeChecker<'_, 'chk> {
                         let type_info = match &ty.clone().kind {
                             ty::TyKind::Ref(inner) => {
                                 inner.clone() 
+                            }, 
+                            ty::TyKind::ConstPtr(inner) => {
+                                inner.clone()
                             }, 
                             _ => {
                                 self.error(format!("Cannot dereference non reference type")); 

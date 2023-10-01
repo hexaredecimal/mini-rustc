@@ -34,6 +34,10 @@ impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
                     self.gen_item(inner_item)?;
                 }
             }
+            ItemKind::TypeAlias(alias) => {
+                let binding = self.ctx.get_binding(&alias.name).unwrap(); 
+                println!("Binding: {:?}", binding); 
+            }
         }
         Ok(())
     }
@@ -178,7 +182,7 @@ impl<'gen, 'ctx> Codegen<'gen, 'ctx> {
                 LLValue::Imm(LLImm::Void)
             }
             StmtKind::Expr(expr) => self.eval_expr(expr)?,
-            StmtKind::Let(LetStmt { ident, ty: _, init, mutable }) => {
+            StmtKind::Let(LetStmt { ident, ty: _, init, mutable: _ }) => {
                 let binding = self.ctx.get_binding(ident).unwrap();
                 let local = self.peek_frame().get_local(&binding);
 

@@ -1,12 +1,12 @@
 use super::Parser;
-use crate::ast::{ExternBlock, Func, Item, Impl, ItemKind, Module, StructItem, Ty, TyKind};
+use crate::ast::{ExternBlock, Func, Item, Impl, ItemKind, Module, StructItem, Ty, TyKind, Type};
 use crate::lexer::{self, Token, TokenKind};
 use crate::span::Ident;
 
 pub fn is_item_start(token: &Token) -> bool {
     matches!(
         token.kind,
-        TokenKind::Fn | TokenKind::Extern | TokenKind::Struct | TokenKind::Mod | TokenKind::Impl 
+        TokenKind::Fn | TokenKind::Extern | TokenKind::Struct | TokenKind::Mod | TokenKind::Impl | TokenKind::Type 
     )
 }
 
@@ -30,6 +30,9 @@ impl Parser {
             TokenKind::Impl => Some(Item {
                 kind: ItemKind::Impl(self.parse_impl()?), 
             }),
+            TokenKind::Type => Some(Item {
+                kind: ItemKind::TypeAlias(self.parse_type_alias()?), 
+            }),
             _ => {
                 eprintln!(
                     "Expected item, but found `{}`",
@@ -39,6 +42,37 @@ impl Parser {
             }
         }
     }
+    
+    fn parse_type_alias(&mut self) -> Option<Type> {
+        self.skip_token(); 
+        let name = self.parse_ident()?; 
+
+        if !self.skip_expected_token(TokenKind::Eq){
+            eprintln!(
+                "Expected '=' in type alias, but found `{}`", 
+                self.peek_token().span.to_snippet()
+            );
+
+            return None;
+        }
+
+        let ty = self.parse_type()?;
+
+        if !self.skip_expected_token(TokenKind::Semi) {
+            eprintln!(
+                "Expected ';' after type alias, but found `{}`", 
+                self.peek_token().span.to_snippet()
+            );
+
+            return None;
+        }
+
+        Some (Type {
+            name, 
+            aliasof: ty, 
+        })
+    }
+
 
     fn parse_impl(&mut self) -> Option<Impl> {
         self.skip_token(); 
