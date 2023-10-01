@@ -9,7 +9,8 @@ fn fib(n: i32) -> i32 {
     f
 }
 
-fn main() -> i32 {
+fn main() -> () {
     // Run `echo $?` after executing this binary to see the result
-    fib(10)
+    let result = fib(10); 
+    
 }
